@@ -1,86 +1,105 @@
-import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
+import Link from 'next/link'
+import Header from '../components/Header'
+import { sanityClient, urlFor } from '../sanity'
+import { Post } from '../typings'
 
-const Home: NextPage = () => {
+interface Props {
+  posts: [Post]
+}
+
+const Home = ({ posts }: Props) => {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
+    <div className="mx-auto max-w-7xl">
       <Head>
-        <title>Create Next App</title>
+        <title>Devlogs</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
-
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
-
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+      <Header />
+      <div className="flex items-center justify-between border-y border-black bg-green-500 py-10 lg:py-0">
+        <div className="space-y-5 px-10">
+          <h1 className="max-w-xl font-serif text-6xl">
+            <span className="italic">Devlogs</span> is a place to write and
+            connect for devs.
+          </h1>
+          <h2>
+            Post your thinking on any topic, share ideas or get inspired from
+            others.
+          </h2>
         </div>
-      </main>
+        <img
+          className="hidden h-32 space-y-5 px-10 md:inline-flex lg:h-64"
+          src="https://miro.medium.com/max/1400/1*psYl0y9DUzZWtHzFJLIvTw.png"
+          alt=""
+        />
+      </div>
 
-      <footer className="flex h-24 w-full items-center justify-center border-t">
-        <a
-          className="flex items-center justify-center gap-2"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-        </a>
-      </footer>
+      <div className="grid grid-cols-1 gap-3 p-2 sm:grid-cols-2 md:gap-6 md:p-4 lg:grid-cols-3 lg:p-6">
+        {posts.map((post) => (
+          <Link key={post._id} href={`/post/${post.slug.current}`}>
+            <div className="group relative cursor-pointer overflow-hidden rounded-lg border">
+              <div className="h-80 w-full object-cover transition-transform duration-200 ease-in-out group-hover:scale-105">
+                <Image
+                  src={urlFor(post.mainImage).url()!}
+                  alt={post.title}
+                  width={100}
+                  height={60}
+                  layout="responsive"
+                  priority
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-between bg-white p-5">
+                <div>
+                  <p className="text-lg font-semibold">{post.title}</p>
+                  <p className="text-x">
+                    {post.description}{' '}
+                    <span className="text-gray-500">
+                      {' '}
+                      by {post.author.name}
+                    </span>
+                  </p>
+                </div>
+                <div className="h-12 w-12">
+                  <Image
+                    className=" rounded-full"
+                    src={urlFor(post.author.image).url()!}
+                    alt={post.author.name}
+                    height="100%"
+                    width="100%"
+                    layout="intrinsic"
+                  />
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
 
 export default Home
+
+export const getServerSideProps = async () => {
+  const query = `*[_type == "post"] {
+    _id,
+    title,
+    author ->{
+    name,
+    image
+    },
+    description,
+    mainImage,
+    slug
+  }`
+
+  const posts = await sanityClient.fetch(query)
+
+  return {
+    props: {
+      posts,
+    },
+  }
+}
